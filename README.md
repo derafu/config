@@ -1,7 +1,11 @@
 # Derafu: Config - Yet Another Config Lib
 
-[![CI Workflow](https://github.com/derafu/config/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/derafu/config/actions/workflows/ci.yml?query=branch%3Amain)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![GitHub last commit](https://img.shields.io/github/last-commit/derafu/config/main)
+![CI Workflow](https://github.com/derafu/config/actions/workflows/ci.yml/badge.svg?branch=main&event=push)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/derafu/config)
+![GitHub Issues](https://img.shields.io/github/issues-raw/derafu/config)
+![Total Downloads](https://poser.pugx.org/derafu/config/downloads)
+![Monthly Downloads](https://poser.pugx.org/derafu/config/d/monthly)
 
 ## Installation
 
