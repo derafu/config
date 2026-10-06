@@ -71,9 +71,12 @@ trait OptionsAwareTrait
 
     /**
      * {@inheritDoc}
+     *
+     * By default there is no schema. The class that has one overrides this
+     * method (it can return a property that it declares).
      */
     public function getOptionsSchema(): array
     {
-        return $this->optionsSchema ?? [];
+        return [];
     }
 }

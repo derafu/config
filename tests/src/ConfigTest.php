@@ -19,14 +19,15 @@ use Derafu\Config\Options;
 use Derafu\Config\Trait\ConfigurableTrait;
 use Derafu\Config\Trait\OptionsAwareTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\OptionsResolver\Exception\InvalidOptionsException;
 use Symfony\Component\OptionsResolver\Exception\UndefinedOptionsException;
 
 #[CoversClass(Configuration::class)]
 #[CoversClass(Options::class)]
-#[CoversClass(ConfigurableTrait::class)]
-#[CoversClass(OptionsAwareTrait::class)]
+#[CoversTrait(ConfigurableTrait::class)]
+#[CoversTrait(OptionsAwareTrait::class)]
 class ConfigTest extends TestCase
 {
     private array $configuration = [
@@ -72,6 +73,31 @@ class ConfigTest extends TestCase
 
         $this->assertSame('Derafu Config', $configurableClass->getConfiguration()->get('app.name'));
         $this->assertSame('Derafu Config', $configurableClass->getConfiguration()->get('app')->get('name'));
+    }
+
+    public function testSchemaIsEmptyByDefault(): void
+    {
+        $this->assertSame([], (new ConfigurableClassWithoutSchema())->getConfigurationSchema());
+        $this->assertSame([], (new OptionsAwareClassWithoutSchema())->getOptionsSchema());
+
+        // Without schema, any configuration or option is accepted.
+        $configurable = new ConfigurableClassWithoutSchema();
+        $this->assertSame('x', $configurable->setConfiguration(['any' => 'x'])->getConfiguration()->get('any'));
+        $optionsAware = new OptionsAwareClassWithoutSchema();
+        $this->assertSame('x', $optionsAware->setOptions(['any' => 'x'])->getOptions()->get('any'));
+    }
+
+    public function testSchemaIsTheOneOfTheOverride(): void
+    {
+        $this->assertSame(['app'], array_keys((new ConfigurableClass())->getConfigurationSchema()));
+        $this->assertSame(['strategy', 'config'], array_keys((new OptionsAwareClass())->getOptionsSchema()));
+    }
+
+    public function testPropertyAloneIsNotTheSchema(): void
+    {
+        // The schema is what the method returns: a property that the class
+        // declares, but that its method does not return, is not read.
+        $this->assertSame([], (new ClassWithPropertyButNoOverride())->getOptionsSchema());
     }
 
     public function testOptionsAware(): void
@@ -127,6 +153,16 @@ class ConfigurableClass implements ConfigurableInterface
             ],
         ],
     ];
+
+    public function getConfigurationSchema(): array
+    {
+        return $this->configurationSchema;
+    }
+}
+
+class ConfigurableClassWithoutSchema implements ConfigurableInterface
+{
+    use ConfigurableTrait;
 }
 
 class OptionsAwareClass implements OptionsAwareInterface
@@ -162,5 +198,24 @@ class OptionsAwareClass implements OptionsAwareInterface
                 ],
             ],
         ],
+    ];
+
+    public function getOptionsSchema(): array
+    {
+        return $this->optionsSchema;
+    }
+}
+
+class OptionsAwareClassWithoutSchema implements OptionsAwareInterface
+{
+    use OptionsAwareTrait;
+}
+
+class ClassWithPropertyButNoOverride implements OptionsAwareInterface
+{
+    use OptionsAwareTrait;
+
+    protected array $optionsSchema = [
+        'strategy' => ['types' => 'string'],
     ];
 }
