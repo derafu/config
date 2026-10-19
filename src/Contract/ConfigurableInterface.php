@@ -21,7 +21,7 @@ interface ConfigurableInterface
     /**
      * Asigna una configuración a la instancia.
      *
-     * @param array|ConfigurationInterface $configuration
+     * @param array<array-key, mixed>|ConfigurationInterface $configuration
      * @return static
      */
     public function setConfiguration(
@@ -38,7 +38,7 @@ interface ConfigurableInterface
     /**
      * Normaliza, y valida, la configuración de la instancia.
      *
-     * @param array $configuration Configuración que puede estar sin normalizar.
+     * @param array<array-key, mixed> $configuration Configuración que puede estar sin normalizar.
      * @return ConfigurationInterface Configuración normalizadas y validadas.
      */
     public function resolveConfiguration(

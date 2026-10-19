@@ -14,7 +14,9 @@ namespace Derafu\TestsConfig;
 
 use Derafu\Config\Configuration;
 use Derafu\Config\Contract\ConfigurableInterface;
+use Derafu\Config\Contract\ConfigurationInterface;
 use Derafu\Config\Contract\OptionsAwareInterface;
+use Derafu\Config\Contract\OptionsInterface;
 use Derafu\Config\Options;
 use Derafu\Config\Trait\ConfigurableTrait;
 use Derafu\Config\Trait\OptionsAwareTrait;
@@ -30,12 +32,14 @@ use Symfony\Component\OptionsResolver\Exception\UndefinedOptionsException;
 #[CoversTrait(OptionsAwareTrait::class)]
 class ConfigTest extends TestCase
 {
+    /** @var array<array-key, mixed> */
     private array $configuration = [
         'app' => [
             'name' => 'Derafu Config',
         ],
     ];
 
+    /** @var array<array-key, mixed> */
     private array $options = [
         'strategy' => 'template.pdf',
         'config' => [
@@ -52,10 +56,14 @@ class ConfigTest extends TestCase
     {
         $configuration = new Configuration($this->configuration);
 
-        $this->assertSame('Derafu Config', $configuration['app']['name']);
+        $app = $configuration['app'];
+        $this->assertInstanceOf(ConfigurationInterface::class, $app);
+        $this->assertSame('Derafu Config', $app['name']);
         $this->assertSame('Derafu Config', $configuration['app.name']);
         $this->assertSame('Derafu Config', $configuration->get('app.name'));
-        $this->assertSame('Derafu Config', $configuration->get('app')->get('name'));
+        $nestedApp = $configuration->get('app');
+        $this->assertInstanceOf(ConfigurationInterface::class, $nestedApp);
+        $this->assertSame('Derafu Config', $nestedApp->get('name'));
     }
 
     public function testOptions(): void
@@ -63,7 +71,9 @@ class ConfigTest extends TestCase
         $options = new Options($this->options);
 
         $this->assertSame('template.pdf', $options->get('strategy'));
-        $this->assertTrue($options->get('config.pdf')->get('footer'));
+        $pdf = $options->get('config.pdf');
+        $this->assertInstanceOf(OptionsInterface::class, $pdf);
+        $this->assertTrue($pdf->get('footer'));
     }
 
     public function testConfigurable(): void
@@ -72,7 +82,9 @@ class ConfigTest extends TestCase
         $configurableClass->setConfiguration($this->configuration);
 
         $this->assertSame('Derafu Config', $configurableClass->getConfiguration()->get('app.name'));
-        $this->assertSame('Derafu Config', $configurableClass->getConfiguration()->get('app')->get('name'));
+        $app = $configurableClass->getConfiguration()->get('app');
+        $this->assertInstanceOf(ConfigurationInterface::class, $app);
+        $this->assertSame('Derafu Config', $app->get('name'));
     }
 
     public function testSchemaIsEmptyByDefault(): void
@@ -106,7 +118,9 @@ class ConfigTest extends TestCase
         $optionsAwareClass->setOptions($this->options);
 
         $this->assertSame('template.pdf', $optionsAwareClass->getOptions()->get('strategy'));
-        $this->assertTrue($optionsAwareClass->getOptions()->get('config.pdf')->get('footer'));
+        $pdf = $optionsAwareClass->getOptions()->get('config.pdf');
+        $this->assertInstanceOf(OptionsInterface::class, $pdf);
+        $this->assertTrue($pdf->get('footer'));
     }
 
     public function testOptionsAwareWithDefaultOptions(): void
@@ -114,7 +128,126 @@ class ConfigTest extends TestCase
         $optionsAwareClass = new OptionsAwareClass();
 
         $this->assertSame('template.html', $optionsAwareClass->getOptions()->get('strategy'));
-        $this->assertFalse($optionsAwareClass->getOptions()->get('config.pdf')->get('footer'));
+        $pdf = $optionsAwareClass->getOptions()->get('config.pdf');
+        $this->assertInstanceOf(OptionsInterface::class, $pdf);
+        $this->assertFalse($pdf->get('footer'));
+    }
+
+    public function testConfigurationIsInitializedLazilyWithSchemaDefaults(): void
+    {
+        $configurable = new ConfigurableClass();
+        $configuration = $configurable->getConfiguration();
+        $this->assertSame(['app' => ['name' => 'Derafu App']], $configuration->all());
+        $this->assertSame($configuration, $configurable->getConfiguration());
+    }
+
+    public function testResolvingBeforeInitializationAppliesSchemaDefaults(): void
+    {
+        $configurable = new ConfigurableClass();
+        $configuration = $configurable->resolveConfiguration();
+        $this->assertSame(['app' => ['name' => 'Derafu App']], $configuration->all());
+        $this->assertSame($configuration, $configurable->getConfiguration());
+
+        $optionsAware = new OptionsAwareClass();
+        $options = $optionsAware->resolveOptions(['strategy' => 'template.pdf']);
+        $this->assertSame('template.pdf', $options->get('strategy'));
+        $this->assertFalse($options->get('config.pdf.footer'));
+        $this->assertSame($options, $optionsAware->getOptions());
+    }
+
+    public function testResolvingConfigurationMergesTopLevelValuesWithoutChangingThePreviousContainer(): void
+    {
+        $original = ['nested' => ['keep' => 1, 'replace' => 2], 'keep' => true];
+        $configurable = new ConfigurableClassWithoutSchema();
+        $configurable->setConfiguration($original);
+        $previous = $configurable->getConfiguration();
+
+        $resolved = $configurable->resolveConfiguration(['nested' => ['new' => 3], 'added' => false]);
+        $this->assertSame(['nested' => ['new' => 3], 'keep' => true, 'added' => false], $resolved->all());
+        $this->assertNotSame($previous, $resolved);
+        $this->assertSame($original, $previous->all());
+        $this->assertSame($resolved, $configurable->getConfiguration());
+        $this->assertSame($resolved->all(), $configurable->resolveConfiguration()->all());
+    }
+
+    public function testResolvingOptionsMergesTopLevelValuesWithoutChangingThePreviousContainer(): void
+    {
+        $original = ['nested' => ['keep' => 1, 'replace' => 2], 'keep' => true];
+        $optionsAware = new OptionsAwareClassWithoutSchema();
+        $optionsAware->setOptions($original);
+        $previous = $optionsAware->getOptions();
+
+        $resolved = $optionsAware->resolveOptions(['nested' => ['new' => 3], 'added' => false]);
+        $this->assertSame(['nested' => ['new' => 3], 'keep' => true, 'added' => false], $resolved->all());
+        $this->assertNotSame($previous, $resolved);
+        $this->assertSame($original, $previous->all());
+        $this->assertSame($resolved, $optionsAware->getOptions());
+        $this->assertSame($resolved->all(), $optionsAware->resolveOptions()->all());
+    }
+
+    public function testSettersKeepSuppliedContainerInstances(): void
+    {
+        $configuration = new Configuration(['name' => 'shared']);
+        $configurable = new ConfigurableClassWithoutSchema();
+        $this->assertSame($configurable, $configurable->setConfiguration($configuration));
+        $this->assertSame($configuration, $configurable->getConfiguration());
+        $configuration->set('name', 'updated');
+        $this->assertSame('updated', $configurable->getConfiguration()->get('name'));
+
+        $options = new Options(['enabled' => true]);
+        $optionsAware = new OptionsAwareClassWithoutSchema();
+        $this->assertSame($optionsAware, $optionsAware->setOptions($options));
+        $this->assertSame($options, $optionsAware->getOptions());
+        $options->set('enabled', false);
+        $this->assertFalse($optionsAware->getOptions()->get('enabled'));
+    }
+
+    public function testConfigurationGetterRevalidatesMutatedData(): void
+    {
+        $configurable = new ConfigurableClass();
+        $configuration = $configurable->getConfiguration();
+        $configuration->set('app.name', false);
+
+        $this->expectException(InvalidOptionsException::class);
+        $configurable->getConfiguration();
+    }
+
+    public function testOptionsGetterRevalidatesMutatedData(): void
+    {
+        $optionsAware = new OptionsAwareClass();
+        $options = $optionsAware->getOptions();
+        $options->set('strategy', 'template.doc');
+
+        $this->expectException(InvalidOptionsException::class);
+        $optionsAware->getOptions();
+    }
+
+    public function testInvalidResolutionPreservesThePreviousConfiguration(): void
+    {
+        $configurable = new ConfigurableClass();
+        $previous = $configurable->getConfiguration();
+        try {
+            $configurable->resolveConfiguration(['app' => ['name' => false]]);
+            $this->fail('An invalid resolved configuration must be rejected.');
+        } catch (InvalidOptionsException $exception) {
+            $this->assertStringContainsString('name', $exception->getMessage());
+            $this->assertSame($previous, $configurable->getConfiguration());
+            $this->assertSame(['app' => ['name' => 'Derafu App']], $previous->all());
+        }
+    }
+
+    public function testInvalidResolutionPreservesThePreviousOptions(): void
+    {
+        $optionsAware = new OptionsAwareClass();
+        $previous = $optionsAware->getOptions();
+        try {
+            $optionsAware->resolveOptions(['strategy' => 'template.doc']);
+            $this->fail('Invalid resolved options must be rejected.');
+        } catch (InvalidOptionsException $exception) {
+            $this->assertStringContainsString('strategy', $exception->getMessage());
+            $this->assertSame($previous, $optionsAware->getOptions());
+            $this->assertSame('template.html', $previous->get('strategy'));
+        }
     }
 
     public function testOptionsAwareWithWrongOptionName(): void
@@ -142,6 +275,7 @@ class ConfigurableClass implements ConfigurableInterface
 {
     use ConfigurableTrait;
 
+    /** @var array<string, array<string, mixed>> */
     protected array $configurationSchema = [
         'app' => [
             'types' => 'array',
@@ -169,6 +303,7 @@ class OptionsAwareClass implements OptionsAwareInterface
 {
     use OptionsAwareTrait;
 
+    /** @var array<string, array<string, mixed>> */
     protected array $optionsSchema = [
         'strategy' => [
             'types' => 'string',
@@ -215,6 +350,7 @@ class ClassWithPropertyButNoOverride implements OptionsAwareInterface
 {
     use OptionsAwareTrait;
 
+    /** @var array<string, array<string, mixed>> */
     protected array $optionsSchema = [
         'strategy' => ['types' => 'string'],
     ];

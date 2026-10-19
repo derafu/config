@@ -22,7 +22,7 @@ interface OptionsAwareInterface
      *
      * Este método asigna nuevas opciones a la instancia.
      *
-     * @param array|OptionsInterface $options
+     * @param array<array-key, mixed>|OptionsInterface $options
      * @return static
      */
     public function setOptions(array|OptionsInterface $options): static;
@@ -40,7 +40,7 @@ interface OptionsAwareInterface
      * Este método resolverá las opciones haciendo merge con las que puedan
      * haber estado asignadas previamente y asignándolas a la instancia.
      *
-     * @param array $options Opciones que pueden estar sin normalizar.
+     * @param array<array-key, mixed> $options Opciones que pueden estar sin normalizar.
      * @return OptionsInterface Opciones normalizadas y validadas.
      */
     public function resolveOptions(array $options): OptionsInterface;
