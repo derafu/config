@@ -52,8 +52,6 @@ trait OptionsAwareTrait
             $this->setOptions([]);
         }
 
-        $this->options->validate();
-
         return $this->options;
     }
 

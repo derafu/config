@@ -25,7 +25,7 @@ class Configuration extends Vault implements ConfigurationInterface
         $value = parent::get($key, $default);
 
         if (is_array($value)) {
-            return new self($value);
+            return $this->createChild($value, $key);
         }
 
         return $value;

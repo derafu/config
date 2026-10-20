@@ -56,8 +56,6 @@ trait ConfigurableTrait
             $this->setConfiguration([]);
         }
 
-        $this->configuration->validate();
-
         return $this->configuration;
     }
 

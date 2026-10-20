@@ -25,7 +25,7 @@ class Options extends Vault implements OptionsInterface
         $value = parent::get($key, $default);
 
         if (is_array($value)) {
-            return new self($value);
+            return $this->createChild($value, $key);
         }
 
         return $value;

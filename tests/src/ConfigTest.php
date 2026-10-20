@@ -202,24 +202,52 @@ class ConfigTest extends TestCase
         $this->assertFalse($optionsAware->getOptions()->get('enabled'));
     }
 
-    public function testConfigurationGetterRevalidatesMutatedData(): void
+    public function testConfigurationRejectsAnInvalidChangeAndKeepsTheData(): void
     {
         $configurable = new ConfigurableClass();
         $configuration = $configurable->getConfiguration();
-        $configuration->set('app.name', false);
 
-        $this->expectException(InvalidOptionsException::class);
-        $configurable->getConfiguration();
+        try {
+            $configuration->set('app.name', false);
+            $this->fail('An invalid change must be rejected.');
+        } catch (InvalidOptionsException) {
+            $this->assertSame('Derafu App', $configurable->getConfiguration()->get('app.name'));
+        }
     }
 
-    public function testOptionsGetterRevalidatesMutatedData(): void
+    public function testOptionsRejectAnInvalidChangeAndKeepTheData(): void
     {
         $optionsAware = new OptionsAwareClass();
         $options = $optionsAware->getOptions();
-        $options->set('strategy', 'template.doc');
 
-        $this->expectException(InvalidOptionsException::class);
-        $optionsAware->getOptions();
+        try {
+            $options->set('strategy', 'template.doc');
+            $this->fail('An invalid change must be rejected.');
+        } catch (InvalidOptionsException) {
+            $this->assertSame('template.html', $optionsAware->getOptions()->get('strategy'));
+        }
+    }
+
+    public function testNestedValuesKeepTheClassOfTheContainer(): void
+    {
+        $options = new ConfigTestOptions(['app' => ['name' => 'Derafu']]);
+        $configuration = new Configuration(['app' => ['name' => 'Derafu']]);
+
+        $this->assertInstanceOf(ConfigTestOptions::class, $options->get('app'));
+        $this->assertInstanceOf(ConfigTestOptions::class, $options['app']);
+        $this->assertInstanceOf(Configuration::class, $configuration->get('app'));
+    }
+
+    public function testTypedGettersAreAvailable(): void
+    {
+        $options = new Options(['app' => ['name' => 'Derafu', 'port' => 8080]]);
+        $configuration = new Configuration(['app' => ['name' => 'Derafu', 'port' => 8080]]);
+
+        $this->assertSame('Derafu', $options->requireString('app.name'));
+        $this->assertSame(8080, $options->requireContainer('app')->requireInt('port'));
+        $this->assertInstanceOf(Options::class, $options->requireContainer('app'));
+        $this->assertSame('Derafu', $configuration->requireString('app.name'));
+        $this->assertInstanceOf(Configuration::class, $configuration->requireContainer('app'));
     }
 
     public function testInvalidResolutionPreservesThePreviousConfiguration(): void
@@ -354,4 +382,8 @@ class ClassWithPropertyButNoOverride implements OptionsAwareInterface
     protected array $optionsSchema = [
         'strategy' => ['types' => 'string'],
     ];
+}
+
+class ConfigTestOptions extends Options
+{
 }
