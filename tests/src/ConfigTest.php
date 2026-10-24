@@ -238,16 +238,57 @@ class ConfigTest extends TestCase
         $this->assertInstanceOf(Configuration::class, $configuration->get('app'));
     }
 
-    public function testTypedGettersAreAvailable(): void
+    public function testTypedReaderIsAvailable(): void
     {
         $options = new Options(['app' => ['name' => 'Derafu', 'port' => 8080]]);
         $configuration = new Configuration(['app' => ['name' => 'Derafu', 'port' => 8080]]);
 
-        $this->assertSame('Derafu', $options->requireString('app.name'));
-        $this->assertSame(8080, $options->requireContainer('app')->requireInt('port'));
+        $this->assertSame('Derafu', $options->getReader()->requireString('app.name'));
+        $this->assertSame(8080, $options->requireContainer('app')->getReader()->requireInt('port'));
         $this->assertInstanceOf(Options::class, $options->requireContainer('app'));
-        $this->assertSame('Derafu', $configuration->requireString('app.name'));
+        $this->assertSame('Derafu', $configuration->getReader()->requireString('app.name'));
         $this->assertInstanceOf(Configuration::class, $configuration->requireContainer('app'));
+    }
+
+    public function testReadersExposeRawArraysWithoutChangingNestedContainerAccess(): void
+    {
+        foreach ([Options::class, Configuration::class] as $class) {
+            $container = new $class(['app' => ['name' => 'Derafu', 'port' => 8080]]);
+            $reader = $container->getReader();
+
+            $this->assertInstanceOf($class, $container->get('app'));
+            $this->assertInstanceOf($class, $container->requireContainer('app'));
+            $this->assertSame(['name' => 'Derafu', 'port' => 8080], $reader->requireArray('app'));
+            $this->assertSame('Derafu', $reader->requireReader('app')->requireString('name'));
+            $this->assertSame(8080, $reader->requireInt('app.port'));
+            $this->assertSame($container->all(), $reader->toArray());
+        }
+    }
+
+    public function testReaderSnapshotsIncludeResolvedDefaultsAndNormalizers(): void
+    {
+        foreach ([Options::class, Configuration::class] as $class) {
+            $container = new $class(['host' => ' localhost '], [
+                'host' => [
+                    'types' => 'string',
+                    'normalizer' => static fn ($options, string $value): string => trim($value),
+                ],
+                'port' => ['types' => 'int', 'default' => 5432],
+            ]);
+            $before = $container->getReader();
+
+            $this->assertSame('localhost', $before->requireString('host'));
+            $this->assertSame(5432, $before->requireInt('port'));
+            $container->set('host', ' db.example.com ');
+            $container->set('port', 3306);
+            $after = $container->getReader();
+
+            $this->assertNotSame($before, $after);
+            $this->assertSame('localhost', $before->requireString('host'));
+            $this->assertSame(5432, $before->requireInt('port'));
+            $this->assertSame('db.example.com', $after->requireString('host'));
+            $this->assertSame(3306, $after->requireInt('port'));
+        }
     }
 
     public function testInvalidResolutionPreservesThePreviousConfiguration(): void
