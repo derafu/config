@@ -13,14 +13,14 @@ declare(strict_types=1);
 namespace Derafu\Config\Contract;
 
 /**
- * Interfaz para instancias que deseen implementar un sistema simple de opciones.
+ * Interface for instances that want to implement a simple options system.
  */
 interface OptionsAwareInterface
 {
     /**
-     * Asigna las opciones que se deben usar en la instancia.
+     * Sets the options to use on the instance.
      *
-     * Este método asigna nuevas opciones a la instancia.
+     * This method assigns new options to the instance.
      *
      * @param array<array-key, mixed>|OptionsInterface $options
      * @return static
@@ -28,27 +28,31 @@ interface OptionsAwareInterface
     public function setOptions(array|OptionsInterface $options): static;
 
     /**
-     * Obtiene las opciones que tiene asignada la instancia.
+     * Returns the options assigned to the instance.
      *
      * @return OptionsInterface
      */
     public function getOptions(): OptionsInterface;
 
     /**
-     * Normaliza, y valida, las opciones de la instancia.
+     * Normalizes and validates the instance options.
      *
-     * Este método resolverá las opciones haciendo merge con las que puedan
-     * haber estado asignadas previamente y asignándolas a la instancia.
+     * This method resolves options by merging them with any previously
+     * assigned options and assigning the result to the instance.
      *
-     * @param array<array-key, mixed> $options Opciones que pueden estar sin normalizar.
-     * @return OptionsInterface Opciones normalizadas y validadas.
+     * @param array<array-key, mixed> $options Options that may be unnormalized.
+     * @return OptionsInterface Normalized and validated options.
      */
     public function resolveOptions(array $options): OptionsInterface;
 
     /**
-     * Entrega el esquema con el que se validarán las opciones.
+     * Returns the schema used to validate options.
      *
-     * @return array<string,array<string,mixed>>
+     * Each key is an option and its value is that option's configuration.
+     * The special key `__allowUndefinedKeys` is a `bool` indicating whether
+     * options not defined in the schema are allowed.
+     *
+     * @return array<string,array<string,mixed>|bool>
      */
     public function getOptionsSchema(): array;
 }

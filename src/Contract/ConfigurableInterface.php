@@ -13,13 +13,12 @@ declare(strict_types=1);
 namespace Derafu\Config\Contract;
 
 /**
- * Interfaz para instancias que deseen implementar un sistema simple de
- * configuración.
+ * Interface for instances that want to implement a simple configuration system.
  */
 interface ConfigurableInterface
 {
     /**
-     * Asigna una configuración a la instancia.
+     * Assigns a configuration to the instance.
      *
      * @param array<array-key, mixed>|ConfigurationInterface $configuration
      * @return static
@@ -29,26 +28,30 @@ interface ConfigurableInterface
     ): static;
 
     /**
-     * Obtiene la configuración de la instancia.
+     * Returns the instance configuration.
      *
      * @return ConfigurationInterface
      */
     public function getConfiguration(): ConfigurationInterface;
 
     /**
-     * Normaliza, y valida, la configuración de la instancia.
+     * Normalizes and validates the instance configuration.
      *
-     * @param array<array-key, mixed> $configuration Configuración que puede estar sin normalizar.
-     * @return ConfigurationInterface Configuración normalizadas y validadas.
+     * @param array<array-key, mixed> $configuration Configuration that may be unnormalized.
+     * @return ConfigurationInterface Normalized and validated configuration.
      */
     public function resolveConfiguration(
         array $configuration
     ): ConfigurationInterface;
 
     /**
-     * Entrega el esquema con el que se validarán las configuraciones.
+     * Returns the schema used to validate configurations.
      *
-     * @return array<string,array<string,mixed>>
+     * Each key is a configuration and its value is that configuration's
+     * settings. The special key `__allowUndefinedKeys` is a `bool` indicating
+     * whether configurations not defined in the schema are allowed.
+     *
+     * @return array<string,array<string,mixed>|bool>
      */
     public function getConfigurationSchema(): array;
 }

@@ -15,6 +15,11 @@ namespace Derafu\Config;
 use Derafu\Config\Contract\ConfigurationInterface;
 use Derafu\Container\Vault;
 
+/**
+ * Configuration container with schema support.
+ *
+ * Nested array values are returned as child configuration instances.
+ */
 class Configuration extends Vault implements ConfigurationInterface
 {
     /**

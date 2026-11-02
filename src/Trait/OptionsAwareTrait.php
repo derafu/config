@@ -16,14 +16,14 @@ use Derafu\Config\Contract\OptionsInterface;
 use Derafu\Config\Options;
 
 /**
- * Trait para clases que deseen implementar un sistema simple de opciones.
+ * Trait for classes that want to implement a simple options system.
  *
  * @see Derafu\Config\Contract\OptionsAwareInterface
  */
 trait OptionsAwareTrait
 {
     /**
-     * Contenedor para las opciones.
+     * Holds the options.
      *
      * @var OptionsInterface
      */

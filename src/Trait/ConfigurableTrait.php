@@ -16,14 +16,14 @@ use Derafu\Config\Configuration;
 use Derafu\Config\Contract\ConfigurationInterface;
 
 /**
- * Trait para clases que deseen implementar un sistema simple de configuración.
+ * Trait for classes that want to implement a simple configuration system.
  *
  * @see Derafu\Config\Contract\ConfigurableInterface
  */
 trait ConfigurableTrait
 {
     /**
-     * Contenedor para las configuraciones.
+     * Holds the configuration.
      *
      * @var ConfigurationInterface
      */

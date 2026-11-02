@@ -14,6 +14,9 @@ namespace Derafu\Config\Contract;
 
 use Derafu\Container\Contract\VaultInterface;
 
+/**
+ * Interface for structured configuration containers.
+ */
 interface ConfigurationInterface extends VaultInterface
 {
 }

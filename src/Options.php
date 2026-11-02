@@ -15,6 +15,11 @@ namespace Derafu\Config;
 use Derafu\Config\Contract\OptionsInterface;
 use Derafu\Container\Vault;
 
+/**
+ * Options container with schema support.
+ *
+ * Nested array values are returned as child options instances.
+ */
 class Options extends Vault implements OptionsInterface
 {
     /**
