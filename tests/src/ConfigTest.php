@@ -76,6 +76,40 @@ class ConfigTest extends TestCase
         $this->assertTrue($pdf->get('footer'));
     }
 
+    /**
+     * The options and the configuration are created from another container, of
+     * any kind: only its data is taken, and it is validated with the schema of
+     * the new one.
+     */
+    public function testOptionsAreCreatedFromAnotherContainer(): void
+    {
+        $schema = [
+            'strategy' => ['types' => 'string', 'default' => 'template.html'],
+            'debug' => ['types' => 'bool', 'default' => false],
+        ];
+        $source = new Configuration(['strategy' => 'template.pdf']);
+
+        $options = new Options($source, $schema);
+        $configuration = new Configuration($options);
+
+        $this->assertSame('template.pdf', $options->getReader()->requireString('strategy'));
+        $this->assertFalse($options->getReader()->requireBool('debug'));
+        $this->assertSame($options->all(), $configuration->all());
+
+        // A copy: the source and the new options do not change each other.
+        $options->set('strategy', 'template.html');
+        $this->assertSame('template.pdf', $source->getReader()->requireString('strategy'));
+    }
+
+    public function testOptionsFromAnotherContainerAreValidatedWithTheirOwnSchema(): void
+    {
+        $source = new Options(['strategy' => 'template.pdf', 'other' => 1]);
+
+        $this->expectException(UndefinedOptionsException::class);
+
+        new Options($source, ['strategy' => ['types' => 'string']]);
+    }
+
     public function testConfigurable(): void
     {
         $configurableClass = new ConfigurableClass();
